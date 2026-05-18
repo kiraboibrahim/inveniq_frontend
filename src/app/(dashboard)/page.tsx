@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useAuthStore } from "@/store/auth-store";
 import { PageHeader } from "@/components/layout/page-header";
 import { KpiCard } from "@/components/features/dashboard/kpi-card";
 import { AlertRibbon } from "@/components/features/dashboard/alert-ribbon";
@@ -7,12 +11,31 @@ import { mockAlerts, mockSalesData, mockTopProducts } from "@/services/mock-data
 import { Package, DollarSign, AlertTriangle, TrendingUp } from "lucide-react";
 
 export default function Dashboard() {
+  const { user } = useAuthStore();
+  const [greeting, setGreeting] = useState("Good morning");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const hour = new Date().getHours();
+    if (hour < 12) {
+      setGreeting("Good morning");
+    } else if (hour < 17) {
+      setGreeting("Good afternoon");
+    } else {
+      setGreeting("Good evening");
+    }
+  }, []);
+
   const today = new Intl.DateTimeFormat('en-UG', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date());
+  
+  const firstName = user?.name ? user.name.split(" ")[0] : "Bushira";
+  const displayGreeting = mounted ? `${greeting}, ${firstName}` : `Good morning, Bushira`;
 
   return (
     <>
       <PageHeader 
-        title={`Good morning, Bushira`} 
+        title={displayGreeting} 
         breadcrumbs={[{ label: today }]}
       />
       
