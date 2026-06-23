@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 
 export function proxy(request: NextRequest) {
   const session = request.cookies.get('aims_session');
-  const isLoginPage = request.nextUrl.pathname.startsWith('/login');
+    const isLoginPage = request.nextUrl.pathname.startsWith('/login');
 
   // If user is not authenticated and trying to access a protected route
   if (!session && !isLoginPage) {

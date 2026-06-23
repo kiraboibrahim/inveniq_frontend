@@ -1,24 +1,37 @@
-import { Card } from "@/components/ui/card";
 import { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 interface EmptyStateProps {
-  icon: ReactNode;
-  title: string;
-  description: string;
-  action?: ReactNode;
+    icon: ReactNode;
+    title: string;
+    description: string;
+    action?: ReactNode;
+    className?: string;
 }
 
-export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
-  return (
-    <Card className="flex flex-col items-center justify-center p-12 text-center bg-bg-surface border-dashed border-border-strong min-h-[400px]">
-      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-bg-elevated text-text-tertiary mb-6">
-        {icon}
-      </div>
-      <h3 className="text-xl font-medium text-text-primary mb-2">{title}</h3>
-      <p className="text-text-secondary max-w-sm mb-8 leading-relaxed">
-        {description}
-      </p>
-      {action && <div>{action}</div>}
-    </Card>
-  );
+export function EmptyState({ icon, title, description, action, className }: EmptyStateProps) {
+    return (
+        <div
+            className={cn(
+                "flex flex-col items-center justify-center p-12 text-center",
+                "min-h-[400px] w-full rounded-xl",
+                "border border-dashed border-border-strong bg-bg-surface",
+                className
+            )}
+        >
+            {/* Icon */}
+            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-bg-elevated border border-border-subtle text-text-tertiary mb-5">
+                {icon}
+            </div>
+
+            {/* Text */}
+            <h3 className="text-base font-semibold text-text-primary mb-1.5">{title}</h3>
+            <p className="text-sm text-text-secondary max-w-xs leading-relaxed mb-6">
+                {description}
+            </p>
+
+            {/* Action */}
+            {action && <div>{action}</div>}
+        </div>
+    );
 }

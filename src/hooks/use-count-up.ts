@@ -10,9 +10,12 @@ export function useCountUp(endValue: number, duration: number = 800) {
     let animationFrame: number;
 
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let mountTimer: number | undefined;
     if (prefersReducedMotion || endValue === 0) {
-      setValue(endValue);
-      return;
+      mountTimer = window.setTimeout(() => setValue(endValue), 0);
+      return () => {
+        if (mountTimer) clearTimeout(mountTimer);
+      };
     }
 
     const animate = (timestamp: number) => {
@@ -27,7 +30,8 @@ export function useCountUp(endValue: number, duration: number = 800) {
       if (progress < duration) {
         animationFrame = requestAnimationFrame(animate);
       } else {
-        setValue(endValue);
+        // defer final state update to avoid synchronous setState warnings
+        window.setTimeout(() => setValue(endValue), 0);
       }
     };
 

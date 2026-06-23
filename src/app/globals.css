@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @plugin "tailwindcss-animate";
@@ -84,6 +85,11 @@
   --ease-in-out:  cubic-bezier(0.4, 0.0, 0.2, 1.0);
   --ease-spring:  cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-linear:  linear;
+
+  /* Font families */
+  --font-display: 'Outfit', Georgia, "Times New Roman", serif;
+  --font-body: 'Plus Jakarta Sans', "Segoe UI", Roboto, sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
 
 @theme inline {
@@ -193,4 +199,91 @@ body {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Glassmorphism & Radial Glow Accents */
+.glass-card {
+  background: rgba(19, 28, 46, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.glass-card:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(19, 28, 46, 0.7);
+}
+
+.glow-indigo {
+  box-shadow: inset 0 0 20px rgba(99, 102, 241, 0.05), 0 4px 20px rgba(99, 102, 241, 0.05);
+}
+
+.glow-success {
+  box-shadow: inset 0 0 20px rgba(16, 185, 129, 0.05), 0 4px 20px rgba(16, 185, 129, 0.05);
+}
+
+.glow-warning {
+  box-shadow: inset 0 0 20px rgba(245, 158, 11, 0.05), 0 4px 20px rgba(245, 158, 11, 0.05);
+}
+
+.glow-danger {
+  box-shadow: inset 0 0 20px rgba(239, 68, 68, 0.05), 0 4px 20px rgba(239, 68, 68, 0.05);
+}
+
+/* Native Date Input Theme Styling */
+input[type="date"] {
+  color-scheme: dark;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.6) sepia(1) saturate(5) hue-rotate(200deg);
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* Hide scrollbar utility */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Brand-Themed Global Scrollbar ───────────────────────────── */
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+
+/* Chrome / Safari / Edge */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: var(--radius-full);
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }

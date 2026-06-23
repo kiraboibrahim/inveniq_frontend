@@ -1,108 +1,426 @@
 "use client";
 
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { useState } from "react";
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetDescription,
+} from "@/components/ui/sheet";
 import { useInventoryStore } from "@/store/inventory-store";
-import { mockCustomers } from "@/services/mock-data";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, Mail, TrendingUp, AlertCircle, ShoppingCart } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+    Mail,
+    Landmark,
+    CheckCircle2,
+    Clock,
+    User,
+    ChevronDown,
+    ChevronUp,
+} from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { stakeholderService } from "@/services/api";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+
+const UGX = (n: number) =>
+    new Intl.NumberFormat("en-UG", {
+        style: "currency",
+        currency: "UGX",
+        maximumFractionDigits: 0,
+    }).format(n);
 
 export function CustomerDrawer() {
-  const { isCustomerDrawerOpen, selectedCustomerId, closeCustomerDrawer } = useInventoryStore();
+    const queryClient = useQueryClient();
+    const {
+        isCustomerDrawerOpen,
+        selectedCustomerId,
+        closeCustomerDrawer,
+        setCustomerModalOpen,
+    } = useInventoryStore();
 
-  const customer = mockCustomers.find((c) => c.id === selectedCustomerId);
+    const [isPaying, setIsPaying] = useState(false);
+    const [paymentAmount, setPaymentAmount] = useState("");
+    const [paymentNote, setPaymentNote] = useState("");
+    const [showHistory, setShowHistory] = useState(false);
 
-  return (
-    <Sheet open={isCustomerDrawerOpen} onOpenChange={(open) => !open && closeCustomerDrawer()}>
-      <SheetContent className="w-full sm:max-w-[480px] bg-bg-surface border-border-subtle p-0 flex flex-col">
-        {customer ? (
-          <>
-            <SheetHeader className="p-6 border-b border-border-subtle">
-              <div className="flex items-center justify-between">
-                <div>
-                  <SheetTitle className="text-xl font-medium text-text-primary">{customer.companyName}</SheetTitle>
-                  <SheetDescription className="text-text-secondary mt-1">
-                    {customer.contactPerson} · {customer.id.toUpperCase()}
-                  </SheetDescription>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-text-secondary hover:text-text-primary">
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-danger-text hover:text-danger hover:bg-danger/10">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </SheetHeader>
+    // ── Queries ──────────────────────────────────────────────────────────────
+    const { data: customer, isLoading } = useQuery({
+        queryKey: ["customer", selectedCustomerId],
+        queryFn: () =>
+            selectedCustomerId
+                ? stakeholderService.getCustomer(selectedCustomerId)
+                : null,
+        enabled: !!selectedCustomerId && isCustomerDrawerOpen,
+    });
 
-            <div className="p-6 flex-1 overflow-y-auto space-y-8">
-              {/* Financial Stats */}
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <p className="text-sm text-text-tertiary mb-1 flex items-center gap-1"><TrendingUp className="w-3.5 h-3.5" /> Lifetime Value</p>
-                  <p className="text-2xl font-mono text-success-text">
-                    {new Intl.NumberFormat("en-UG", { style: "currency", currency: "UGX", notation: "compact", maximumFractionDigits: 1 }).format(customer.lifetimeValue)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-text-tertiary mb-1 flex items-center gap-1"><AlertCircle className="w-3.5 h-3.5" /> Outstanding</p>
-                  <p className={`text-2xl font-mono ${customer.outstandingBalance > 0 ? "text-danger-text" : "text-text-secondary"}`}>
-                    {customer.outstandingBalance > 0
-                      ? new Intl.NumberFormat("en-UG", { style: "currency", currency: "UGX", notation: "compact", maximumFractionDigits: 1 }).format(customer.outstandingBalance)
-                      : "None"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-text-tertiary mb-1">Email</p>
-                  <a href={`mailto:${customer.email}`} className="text-accent hover:underline text-sm flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5" />
-                    {customer.email}
-                  </a>
-                </div>
-                <div>
-                  <p className="text-sm text-text-tertiary mb-1">Last Order</p>
-                  <p className="text-base text-text-primary font-medium">
-                    {new Date(customer.lastOrderDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                  </p>
-                </div>
-              </div>
+    const { data: payments = [], isFetching: isFetchingHistory } = useQuery({
+        queryKey: ["customer-payments", selectedCustomerId],
+        queryFn: () => stakeholderService.getCustomerPayments(selectedCustomerId!),
+        enabled: !!selectedCustomerId && isCustomerDrawerOpen && showHistory,
+    });
 
-              {/* Recent Orders */}
-              <div>
-                <h4 className="text-sm font-medium text-text-primary mb-4">Recent Orders</h4>
-                <div className="rounded-md border border-border-subtle bg-bg-elevated divide-y divide-border-subtle">
-                  {[
-                    { id: "ORD-001", amount: 1250000, date: "10 May 2026" },
-                    { id: "ORD-002", amount: 3800000, date: "2 May 2026" },
-                    { id: "ORD-003", amount: 780000, date: "24 Apr 2026" },
-                  ].map((order) => (
-                    <div key={order.id} className="flex items-center justify-between p-4">
-                      <div className="flex items-center gap-3">
-                        <ShoppingCart className="w-4 h-4 text-text-tertiary" />
-                        <div>
-                          <p className="text-text-primary font-mono text-sm">{order.id}</p>
-                          <p className="text-text-tertiary text-xs">{order.date}</p>
-                        </div>
-                      </div>
-                      <span className="text-text-primary font-medium text-sm">
-                        {new Intl.NumberFormat("en-UG", { style: "currency", currency: "UGX", maximumFractionDigits: 0 }).format(order.amount)}
-                      </span>
+    // ── Payment mutation (uses dedicated endpoint) ────────────────────────────
+    const paymentMutation = useMutation({
+        mutationFn: (data: { amount: number; note?: string }) =>
+            stakeholderService.recordPayment(selectedCustomerId!, data),
+        onSuccess: (res) => {
+            toast.success("Payment recorded", {
+                description: `Outstanding balance updated to ${UGX(
+                    Number(res.customer.outstandingBalance)
+                )}.`,
+            });
+            queryClient.invalidateQueries({ queryKey: ["customers"] });
+            queryClient.invalidateQueries({ queryKey: ["customer", selectedCustomerId] });
+            queryClient.invalidateQueries({ queryKey: ["customer-payments", selectedCustomerId] });
+            setIsPaying(false);
+            setPaymentAmount("");
+            setPaymentNote("");
+        },
+        onError: (err: unknown) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const msg = (err as any)?.response?.data?.error ?? "Failed to record payment.";
+            toast.error(msg);
+        },
+    });
+
+    const handleRecordPayment = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!customer) return;
+        const amount = Number(paymentAmount);
+        if (!amount || amount <= 0) {
+            toast.error("Please enter a valid payment amount.");
+            return;
+        }
+        paymentMutation.mutate({ amount, note: paymentNote });
+    };
+
+    const handleSettleFull = () => {
+        if (!customer || customer.outstandingBalance <= 0) return;
+        if (
+            !confirm(
+                `Settle the full outstanding balance of ${UGX(customer.outstandingBalance)} for ${customer.companyName}?`
+            )
+        )
+            return;
+        paymentMutation.mutate({
+            amount: customer.outstandingBalance,
+            note: "Full balance settlement",
+        });
+    };
+
+    const handleClose = () => {
+        closeCustomerDrawer();
+        setIsPaying(false);
+        setPaymentAmount("");
+        setPaymentNote("");
+        setShowHistory(false);
+    };
+
+    // ── Render ───────────────────────────────────────────────────────────────
+    return (
+        <Sheet open={isCustomerDrawerOpen} onOpenChange={(open) => !open && handleClose()}>
+            <SheetContent className="w-full sm:max-w-[480px] bg-bg-surface border-border-subtle p-0 flex flex-col">
+                <SheetTitle className="sr-only">
+                    {customer ? customer.companyName : "Customer Details"}
+                </SheetTitle>
+                <SheetDescription className="sr-only">
+                    {customer
+                        ? `Details and payment history for ${customer.companyName}`
+                        : "Loading customer details..."}
+                </SheetDescription>
+
+                {isLoading ? (
+                    <div className="p-6 flex items-center justify-center h-full">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent" />
                     </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+                ) : customer ? (
+                    <>
+                        {/* ── Header ────────────────────────────────────────── */}
+                        <SheetHeader className="p-6 border-b border-border-subtle">
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <div className="text-xl font-semibold text-text-primary font-display">
+                                        {customer.companyName}
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-text-secondary mt-1 text-sm">
+                                        <User className="w-3.5 h-3.5" />
+                                        {customer.contactPerson}
+                                    </div>
+                                </div>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                        closeCustomerDrawer();
+                                        setCustomerModalOpen(true, customer);
+                                    }}
+                                    className="text-xs text-text-secondary hover:text-text-primary border border-border-subtle rounded-lg h-8 px-3"
+                                >
+                                    Edit
+                                </Button>
+                            </div>
+                        </SheetHeader>
 
-            <div className="p-6 border-t border-border-subtle flex gap-3 mt-auto">
-              <Button className="flex-1 bg-accent hover:bg-accent-hover text-white">Create Invoice</Button>
-            </div>
-          </>
-        ) : (
-          <div className="p-6 flex items-center justify-center h-full text-text-secondary">
-            Customer not found.
-          </div>
-        )}
-      </SheetContent>
-    </Sheet>
-  );
+                        {/* ── Body ──────────────────────────────────────────── */}
+                        <div className="p-6 flex-1 overflow-y-auto space-y-6">
+
+                            {/* KPI cards */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="p-4 rounded-xl bg-bg-elevated border border-border-subtle">
+                                    <p className="text-[10px] text-text-tertiary uppercase tracking-widest mb-1">
+                                        Lifetime Value
+                                    </p>
+                                    <p className="text-base font-mono font-bold text-success-text">
+                                        {UGX(customer.lifetimeValue)}
+                                    </p>
+                                </div>
+                                <div
+                                    className={cn(
+                                        "p-4 rounded-xl border",
+                                        customer.outstandingBalance > 0
+                                            ? "bg-danger/5 border-danger/20"
+                                            : "bg-bg-elevated border-border-subtle"
+                                    )}
+                                >
+                                    <p className="text-[10px] text-text-tertiary uppercase tracking-widest mb-1">
+                                        Outstanding Balance
+                                    </p>
+                                    <p
+                                        className={cn(
+                                            "text-base font-mono font-bold",
+                                            customer.outstandingBalance > 0
+                                                ? "text-danger-text"
+                                                : "text-text-tertiary"
+                                        )}
+                                    >
+                                        {UGX(customer.outstandingBalance)}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* ── Payment section ──────────────────────────── */}
+                            {customer.outstandingBalance > 0 ? (
+                                <div className="rounded-xl border border-accent/15 bg-bg-elevated/40 overflow-hidden">
+                                    {/* Section header */}
+                                    <div className="flex items-center gap-2.5 px-5 py-4 border-b border-border-subtle">
+                                        <Landmark className="w-4 h-4 text-accent shrink-0" />
+                                        <div className="min-w-0">
+                                            <h4 className="text-sm font-semibold text-text-primary">
+                                                Record Payment
+                                            </h4>
+                                            <p className="text-xs text-text-tertiary mt-0.5">
+                                                Reduce debt by registering a payment received.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-5 space-y-3">
+                                        {!isPaying ? (
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    onClick={() => setIsPaying(true)}
+                                                    className="flex-1 bg-accent hover:bg-accent-hover text-white rounded-lg h-9 text-xs font-semibold"
+                                                >
+                                                    Enter Amount
+                                                </Button>
+                                                <Button
+                                                    onClick={handleSettleFull}
+                                                    disabled={paymentMutation.isPending}
+                                                    variant="outline"
+                                                    className="flex-1 border-accent/30 text-accent hover:bg-accent/10 hover:border-accent/50 rounded-lg h-9 text-xs font-semibold gap-1.5"
+                                                >
+                                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                                    Settle Full Balance
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <form
+                                                onSubmit={handleRecordPayment}
+                                                className="flex flex-col gap-3"
+                                            >
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="text-xs font-medium text-text-secondary">
+                                                        Amount Received (UGX){" "}
+                                                        <span className="text-danger-text">*</span>
+                                                    </label>
+                                                    <Input
+                                                        type="number"
+                                                        value={paymentAmount}
+                                                        onChange={(e) =>
+                                                            setPaymentAmount(e.target.value)
+                                                        }
+                                                        placeholder={`Max ${UGX(customer.outstandingBalance)}`}
+                                                        max={customer.outstandingBalance}
+                                                        min="1"
+                                                        required
+                                                        className="h-9 rounded-lg"
+                                                        autoFocus
+                                                    />
+                                                </div>
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="text-xs font-medium text-text-secondary">
+                                                        Note (optional)
+                                                    </label>
+                                                    <Input
+                                                        value={paymentNote}
+                                                        onChange={(e) =>
+                                                            setPaymentNote(e.target.value)
+                                                        }
+                                                        placeholder="e.g. Cash via MTN Mobile Money"
+                                                        className="h-9 rounded-lg"
+                                                        maxLength={255}
+                                                    />
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        type="submit"
+                                                        disabled={paymentMutation.isPending}
+                                                        className="bg-success text-white hover:bg-success-hover text-xs h-9 px-4 rounded-lg"
+                                                    >
+                                                        {paymentMutation.isPending
+                                                            ? "Saving…"
+                                                            : "Confirm Payment"}
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setIsPaying(false);
+                                                            setPaymentAmount("");
+                                                            setPaymentNote("");
+                                                        }}
+                                                        variant="ghost"
+                                                        className="text-text-secondary hover:text-text-primary text-xs h-9 px-3 rounded-lg"
+                                                    >
+                                                        Cancel
+                                                    </Button>
+                                                </div>
+                                            </form>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-3 p-4 rounded-xl border border-success/20 bg-success/5">
+                                    <CheckCircle2 className="w-5 h-5 text-success-text shrink-0" />
+                                    <div>
+                                        <p className="text-sm font-semibold text-success-text">
+                                            No outstanding balance
+                                        </p>
+                                        <p className="text-xs text-text-tertiary mt-0.5">
+                                            This customer has no pending debt.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ── Payment history ──────────────────────────── */}
+                            <div className="space-y-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowHistory((v) => !v)}
+                                    className="w-full flex items-center justify-between px-1 py-1 text-xs font-semibold text-text-tertiary uppercase tracking-widest hover:text-text-secondary transition-colors"
+                                >
+                                    <span className="flex items-center gap-1.5">
+                                        <Clock className="w-3.5 h-3.5" />
+                                        Payment History
+                                    </span>
+                                    {showHistory ? (
+                                        <ChevronUp className="w-3.5 h-3.5" />
+                                    ) : (
+                                        <ChevronDown className="w-3.5 h-3.5" />
+                                    )}
+                                </button>
+
+                                {showHistory && (
+                                    <div className="border border-border-subtle rounded-xl overflow-hidden">
+                                        {isFetchingHistory ? (
+                                            <div className="flex justify-center py-6">
+                                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-accent" />
+                                            </div>
+                                        ) : payments.length > 0 ? (
+                                            <div className="divide-y divide-border-subtle">
+                                                {payments.map((p) => (
+                                                    <div
+                                                        key={p.id}
+                                                        className="flex items-center justify-between px-4 py-3 hover:bg-bg-elevated transition-colors"
+                                                    >
+                                                        <div className="min-w-0">
+                                                            <p className="text-sm font-mono font-semibold text-success-text">
+                                                                +{UGX(Number(p.amount))}
+                                                            </p>
+                                                            <p className="text-xs text-text-tertiary mt-0.5 truncate max-w-[200px]">
+                                                                {p.note || "—"}
+                                                            </p>
+                                                        </div>
+                                                        <div className="text-right shrink-0 ml-3">
+                                                            <p className="text-xs text-text-secondary">
+                                                                {new Date(p.created_at).toLocaleDateString(
+                                                                    "en-GB",
+                                                                    {
+                                                                        day: "numeric",
+                                                                        month: "short",
+                                                                        year: "numeric",
+                                                                    }
+                                                                )}
+                                                            </p>
+                                                            {p.recorded_by_name && (
+                                                                <Badge
+                                                                    variant="secondary"
+                                                                    className="text-[9px] mt-0.5"
+                                                                >
+                                                                    {p.recorded_by_name}
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="py-6 text-center text-xs text-text-tertiary">
+                                                No payments recorded yet.
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Contact */}
+                            <div className="space-y-2">
+                                <h4 className="text-xs font-semibold text-text-tertiary uppercase tracking-widest">
+                                    Contact
+                                </h4>
+                                <div className="flex items-center gap-3 p-3 rounded-xl bg-bg-elevated border border-border-subtle">
+                                    <Mail className="w-4 h-4 text-text-tertiary" />
+                                    <span className="text-sm text-text-primary">
+                                        {customer.email}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ── Footer ────────────────────────────────────────── */}
+                        <div className="p-6 border-t border-border-subtle mt-auto">
+                            <Button
+                                onClick={() => {
+                                    closeCustomerDrawer();
+                                    window.location.href = `/pos?customer=${customer.id}`;
+                                }}
+                                className="w-full bg-bg-elevated hover:bg-bg-elevated/80 border border-border-subtle text-text-primary font-semibold h-11 rounded-xl flex items-center justify-center gap-2"
+                            >
+                                <Landmark className="w-4 h-4 text-accent" />
+                                Go to POS to sell on credit
+                            </Button>
+                        </div>
+                    </>
+                ) : (
+                    <div className="p-6 flex items-center justify-center h-full text-text-secondary">
+                        Customer not found.
+                    </div>
+                )}
+            </SheetContent>
+        </Sheet>
+    );
 }

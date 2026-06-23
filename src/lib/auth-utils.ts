@@ -1,5 +1,4 @@
 export function setAuthCookie(token: string) {
-  // Set a mock session cookie that expires in 1 day
   const expires = new Date();
   expires.setTime(expires.getTime() + 1 * 24 * 60 * 60 * 1000);
   document.cookie = `aims_session=${token};expires=${expires.toUTCString()};path=/;SameSite=Strict`;

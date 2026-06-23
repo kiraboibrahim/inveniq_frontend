@@ -34,7 +34,7 @@ export function PageHeader({ title, breadcrumbs, action }: PageHeaderProps) {
             ))}
           </nav>
         )}
-        <h1 className="text-xl font-semibold text-text-primary">{title}</h1>
+        <h1 className="text-2xl font-bold tracking-tight font-display text-text-primary">{title}</h1>
       </div>
       
       {action && (
