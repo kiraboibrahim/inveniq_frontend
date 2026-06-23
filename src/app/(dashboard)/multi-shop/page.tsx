@@ -25,7 +25,7 @@ export default function MultiShop() {
     };
 
     return (
-        <RoleGuard allowedRoles={["admin"]}>
+        <RoleGuard allowedRoles={["admin", "manager"]}>
             <PageHeader
                 title="Multi-Shop Management"
                 breadcrumbs={[{ label: "AIMS" }, { label: "Multi-Shop" }]}
