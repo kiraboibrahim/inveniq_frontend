@@ -63,18 +63,47 @@ export function Chatbot() {
     setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
 
-    try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ messages: [...messages, userMsg] }),
-      });
+    let attempts = 0;
+    const maxAttempts = 3;
+    let response: Response | null = null;
+    let lastError: Error | null = null;
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || `HTTP error! status: ${response.status}`);
+    try {
+      while (attempts < maxAttempts) {
+        try {
+          attempts++;
+          response = await fetch("/api/chat", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ messages: [...messages, userMsg] }),
+          });
+
+          if (response.status === 429) {
+            const errorText = await response.text().catch(() => "");
+            throw new Error(errorText || "Rate limit exceeded");
+          }
+
+          if (!response.ok) {
+            const errorText = await response.text().catch(() => "");
+            throw new Error(errorText || `HTTP error! status: ${response.status}`);
+          }
+
+          break;
+        } catch (err) {
+          lastError = err as Error;
+          console.warn(`Chat attempt ${attempts} failed:`, err);
+          if (attempts < maxAttempts && response?.status !== 429) {
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            continue;
+          }
+          break;
+        }
+      }
+
+      if (!response || !response.ok) {
+        throw lastError || new Error("Failed to get response after multiple attempts");
       }
 
       const reader = response.body?.getReader();
