@@ -14,15 +14,17 @@ import { Loader2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { branchService } from "@/services/api";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { Branch } from "@/types";
 
 interface BranchFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   branchToEdit?: (Branch & { manager_email?: string; address?: string }) | null;
+  preventClose?: boolean;
 }
 
-export function BranchForm({ open, onOpenChange, branchToEdit }: BranchFormProps) {
+export function BranchForm({ open, onOpenChange, branchToEdit, preventClose = false }: BranchFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   
   const [name, setName] = useState(branchToEdit?.name || "");
@@ -46,6 +48,7 @@ export function BranchForm({ open, onOpenChange, branchToEdit }: BranchFormProps
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["branchKpis"] });
       queryClient.invalidateQueries({ queryKey: ["branch", branchToEdit?.id] });
+      queryClient.invalidateQueries({ queryKey: ["branches"] });
       onOpenChange(false);
       toast.success(branchToEdit ? "Branch updated successfully" : "Branch created successfully");
       setIsLoading(false);
@@ -72,13 +75,25 @@ export function BranchForm({ open, onOpenChange, branchToEdit }: BranchFormProps
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px] bg-bg-surface border-border-subtle text-text-primary">
+    <Dialog open={open} onOpenChange={preventClose ? undefined : onOpenChange}>
+      <DialogContent 
+        className={cn(
+          "sm:max-w-[520px] bg-bg-surface border-border-subtle text-text-primary",
+          preventClose && "[&>button]:hidden"
+        )}
+        onPointerDownOutside={preventClose ? (e) => e.preventDefault() : undefined}
+        onEscapeKeyDown={preventClose ? (e) => e.preventDefault() : undefined}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl font-medium">
-            {branchToEdit ? "Edit Branch" : "Add New Branch"}
+            {preventClose ? "Create Your First Shop" : (branchToEdit ? "Edit Branch" : "Add New Branch")}
           </DialogTitle>
         </DialogHeader>
+        {preventClose && (
+          <p className="text-sm text-text-secondary -mt-1">
+            Welcome to InvenIQ! Please set up your first branch/shop to get started.
+          </p>
+        )}
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
           <div className="space-y-2">
             <Label htmlFor="branchName" className="text-text-secondary">Branch Name</Label>
@@ -86,7 +101,7 @@ export function BranchForm({ open, onOpenChange, branchToEdit }: BranchFormProps
               id="branchName" 
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Gulu Branch" 
+              placeholder="e.g. Main Shop" 
               required
               className="bg-bg-elevated border-border-subtle focus-visible:ring-accent" 
             />
@@ -99,7 +114,7 @@ export function BranchForm({ open, onOpenChange, branchToEdit }: BranchFormProps
                 id="location" 
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                placeholder="e.g. Gulu" 
+                placeholder="e.g. Kampala" 
                 required
                 className="bg-bg-elevated border-border-subtle focus-visible:ring-accent" 
               />
@@ -110,7 +125,7 @@ export function BranchForm({ open, onOpenChange, branchToEdit }: BranchFormProps
                 id="branchCode" 
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                placeholder="e.g. GUL-01" 
+                placeholder="e.g. MAIN-01" 
                 required
                 className="bg-bg-elevated border-border-subtle focus-visible:ring-accent font-mono" 
               />
@@ -148,22 +163,24 @@ export function BranchForm({ open, onOpenChange, branchToEdit }: BranchFormProps
               id="address" 
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              placeholder="Plot 12, Main Street, Gulu"
+              placeholder="Plot 12, Main Street, Kampala"
               className="bg-bg-elevated border-border-subtle focus-visible:ring-accent" 
             />
           </div>
 
           <div className="pt-4 flex justify-end gap-3 border-t border-border-subtle">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => onOpenChange(false)}
-              className="border-border-subtle text-text-secondary hover:text-text-primary hover:bg-bg-elevated"
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isLoading} className="bg-accent hover:bg-accent-hover text-white">
-              {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : "Save Branch"}
+            {!preventClose && (
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => onOpenChange(false)}
+                className="border-border-subtle text-text-secondary hover:text-text-primary hover:bg-bg-elevated"
+              >
+                Cancel
+              </Button>
+            )}
+            <Button type="submit" disabled={isLoading} className="bg-accent hover:bg-accent-hover text-white w-full sm:w-auto">
+              {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : (preventClose ? "Get Started" : "Save Branch")}
             </Button>
           </div>
         </form>
