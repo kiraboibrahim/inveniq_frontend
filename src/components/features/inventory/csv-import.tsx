@@ -19,8 +19,8 @@ export function CsvImport() {
 
     const importMutation = useMutation({
         mutationFn: (file: File) => inventoryService.importExcel(file, activeBranch),
-        onSuccess: (data) => {
-            queryClient.invalidateQueries({ queryKey: ["products"] });
+        onSuccess: async (data) => {
+            await queryClient.invalidateQueries({ queryKey: ["products"] });
             toast.success(data.message || "Import successful");
             setIsSuccess(true);
             setTimeout(() => {

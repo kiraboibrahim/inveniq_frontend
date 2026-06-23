@@ -44,8 +44,8 @@ export function ProductForm() {
                     console.error("Failed to create initial stock for shop", e);
                 }
             }
-            queryClient.invalidateQueries({ queryKey: ["products", activeBranch] });
-            queryClient.invalidateQueries({ queryKey: ["products"] });
+            await queryClient.invalidateQueries({ queryKey: ["products", activeBranch] });
+            await queryClient.invalidateQueries({ queryKey: ["products"] });
             setAddProductOpen(false);
             setSelectedCategoryId("");
             setSelectedSupplierId("");
