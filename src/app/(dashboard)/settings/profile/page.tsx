@@ -26,6 +26,7 @@ export default function ProfilePage() {
     const [formData, setFormData] = useState({
         first_name: "",
         last_name: "",
+        email: "",
         phone_number: "",
         bio: "",
     });
@@ -42,6 +43,7 @@ export default function ProfilePage() {
                 setFormData({
                     first_name: user.first_name || "",
                     last_name: user.last_name || "",
+                    email: user.email || "",
                     phone_number: user.phone_number || "",
                     bio: user.bio || "",
                 });
@@ -60,11 +62,21 @@ export default function ProfilePage() {
                     name: data.display_name || data.name || `${data.first_name} ${data.last_name}`.trim() || authUser.name,
                     first_name: data.first_name,
                     last_name: data.last_name,
+                    email: data.email || authUser.email,
                 });
             }
             toast.success("Profile updated");
         },
-        onError: () => toast.error("Failed to update profile"),
+        onError: (err: any) => {
+            const data = err.response?.data;
+            const firstError = data ? Object.values(data)[0] : null;
+            const msg = Array.isArray(firstError)
+                ? firstError[0]
+                : typeof firstError === "string"
+                    ? firstError
+                    : "Failed to update profile";
+            toast.error(msg);
+        },
     });
 
     const changePasswordMutation = useMutation({
@@ -214,11 +226,17 @@ export default function ProfilePage() {
                                         <Label htmlFor="email" className="text-text-secondary">Email address</Label>
                                         <Input
                                             id="email"
-                                            value={user?.email}
-                                            disabled
-                                            className="bg-bg-base opacity-60"
+                                            type="email"
+                                            value={formData.email}
+                                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                            disabled={user?.role !== "admin" && user?.role !== "manager"}
+                                            className={user?.role !== "admin" && user?.role !== "manager" ? "bg-bg-base opacity-60" : ""}
                                         />
-                                        <p className="text-xs text-text-tertiary">Email address cannot be changed.</p>
+                                        {user?.role !== "admin" && user?.role !== "manager" ? (
+                                            <p className="text-xs text-text-tertiary">Email address can only be changed by administrators or managers.</p>
+                                        ) : (
+                                            <p className="text-xs text-text-tertiary">Changing your email will update your login credentials.</p>
+                                        )}
                                     </div>
 
                                     <div className="space-y-1.5">

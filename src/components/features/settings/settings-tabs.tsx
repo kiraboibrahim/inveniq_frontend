@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { User, Bell, Shield, Smartphone } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { userService } from "@/services/api";
 import { useAuthStore } from "@/store/auth-store";
+import { toast } from "sonner";
 
 export function SettingsTabs() {
   const [activeTab, setActiveTab] = useState("profile");
@@ -64,6 +65,8 @@ export function SettingsTabs() {
 }
 
 function ProfileForm({ firstName, lastName, email, role }: { firstName: string; lastName: string; email: string; role: string }) {
+  const queryClient = useQueryClient();
+  const { user: authUser, login } = useAuthStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -71,12 +74,35 @@ function ProfileForm({ firstName, lastName, email, role }: { firstName: string; 
     setIsSubmitting(true);
     const form = e.currentTarget as HTMLFormElement;
     const formData = new FormData(form);
-    await userService.updateProfile({
-      first_name: formData.get("firstName"),
-      last_name: formData.get("lastName"),
-      email: formData.get("email"),
-    });
-    setIsSubmitting(false);
+    try {
+      const data = await userService.updateProfile({
+        first_name: formData.get("firstName"),
+        last_name: formData.get("lastName"),
+        email: formData.get("email"),
+      });
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      if (authUser) {
+        login({
+          ...authUser,
+          name: data.display_name || data.name || `${data.first_name} ${data.last_name}`.trim() || authUser.name,
+          first_name: data.first_name,
+          last_name: data.last_name,
+          email: data.email || authUser.email,
+        });
+      }
+      toast.success("Profile updated");
+    } catch (err: any) {
+      const data = err.response?.data;
+      const firstError = data ? Object.values(data)[0] : null;
+      const msg = Array.isArray(firstError)
+        ? firstError[0]
+        : typeof firstError === "string"
+          ? firstError
+          : "Failed to update profile";
+      toast.error(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -101,7 +127,17 @@ function ProfileForm({ firstName, lastName, email, role }: { firstName: string; 
           
           <div className="space-y-2">
             <Label htmlFor="email" className="text-text-secondary">Email Address</Label>
-            <Input id="email" name="email" type="email" defaultValue={email} className="bg-bg-elevated border-border-subtle focus-visible:ring-accent" />
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              defaultValue={email}
+              disabled={role !== "admin" && role !== "manager"}
+              className={role !== "admin" && role !== "manager" ? "bg-bg-base border-border-subtle text-text-tertiary cursor-not-allowed" : "bg-bg-elevated border-border-subtle focus-visible:ring-accent"}
+            />
+            {role !== "admin" && role !== "manager" && (
+              <p className="text-xs text-text-tertiary mt-1">Email address can only be changed by administrators or managers.</p>
+            )}
           </div>
 
           <div className="space-y-2">
