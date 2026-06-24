@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { inventoryService } from "@/services/api";
+import { inventoryService, stakeholderService } from "@/services/api";
 import {
     Dialog,
     DialogContent,
@@ -27,7 +27,7 @@ interface OrderItem {
 interface SupplierOrderModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    supplier: Supplier;
+    supplier?: Supplier;
 }
 
 const emptyItem = (): OrderItem => ({
@@ -44,7 +44,17 @@ export function SupplierOrderModal({
 }: SupplierOrderModalProps) {
     const queryClient = useQueryClient();
     const [selectedBranch, setSelectedBranch] = useState("");
+    const [localSupplierId, setLocalSupplierId] = useState("");
     const [items, setItems] = useState<OrderItem[]>([emptyItem()]);
+
+    // Initialize/sync localSupplierId
+    useEffect(() => {
+        if (supplier) {
+            setLocalSupplierId(String(supplier.id));
+        } else {
+            setLocalSupplierId("");
+        }
+    }, [supplier, open]);
 
     // ── Data queries ──────────────────────────────────────────────
 
@@ -63,14 +73,24 @@ export function SupplierOrderModal({
         enabled: open,
     });
 
+    const { data: allSuppliers = [] } = useQuery({
+        queryKey: ["suppliers"],
+        queryFn: () => stakeholderService.getSuppliers(),
+        enabled: open && !supplier,
+    });
+
     // ── Mutation ───────────────────────────────────────────────────
     const mutation = useMutation({
         mutationFn: () => {
             const validItems = items.filter((i) => i.product && i.quantity > 0);
             if (!validItems.length) throw new Error("Add at least one item.");
             if (!selectedBranch) throw new Error("Please select a branch.");
+
+            const finalSupplierId = supplier ? supplier.id : (localSupplierId ? Number(localSupplierId) : null);
+            if (!finalSupplierId) throw new Error("Please select a supplier.");
+
             return inventoryService.createPurchaseOrder({
-                supplier: supplier.id,
+                supplier: finalSupplierId,
                 branch: selectedBranch,
                 items: validItems.map((i) => ({
                     product: i.product,
@@ -80,11 +100,18 @@ export function SupplierOrderModal({
             });
         },
         onSuccess: () => {
+            const supplierName = supplier
+                ? supplier.name
+                : (allSuppliers.find((s) => String(s.id) === localSupplierId)?.name || "Supplier");
             toast.success("Purchase order created", {
-                description: `Order placed with ${supplier.name}`,
+                description: `Order placed with ${supplierName}`,
             });
             queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
-            queryClient.invalidateQueries({ queryKey: ["purchase-orders", supplier.id] });
+            if (supplier) {
+                queryClient.invalidateQueries({ queryKey: ["purchase-orders", supplier.id] });
+            } else if (localSupplierId) {
+                queryClient.invalidateQueries({ queryKey: ["purchase-orders", Number(localSupplierId)] });
+            }
             handleClose();
         },
         onError: (err: unknown) => {
@@ -97,6 +124,7 @@ export function SupplierOrderModal({
     // ── Helpers ────────────────────────────────────────────────────
     const handleClose = useCallback(() => {
         setSelectedBranch("");
+        setLocalSupplierId("");
         setItems([emptyItem()]);
         onOpenChange(false);
     }, [onOpenChange]);
@@ -143,16 +171,40 @@ export function SupplierOrderModal({
                                 New Purchase Order
                             </DialogTitle>
                             <p className="text-xs text-text-tertiary mt-0.5">
-                                Ordering from{" "}
-                                <span className="font-medium text-text-secondary">
-                                    {supplier.name}
-                                </span>
+                                {supplier ? (
+                                    <>
+                                        Ordering from{" "}
+                                        <span className="font-medium text-text-secondary">
+                                            {supplier.name}
+                                        </span>
+                                    </>
+                                ) : (
+                                    "Place a new order with a supplier"
+                                )}
                             </p>
                         </div>
                     </div>
                 </DialogHeader>
 
                 <div className="px-6 py-5 space-y-5 max-h-[65vh] overflow-y-auto">
+                    {/* Supplier selection (only if not pre-provided) */}
+                    {!supplier && (
+                        <div className="space-y-1.5">
+                            <Label className="text-xs font-medium text-text-secondary uppercase tracking-wider">
+                                Supplier <span className="text-danger-text">*</span>
+                            </Label>
+                            <CustomSelect
+                                value={localSupplierId}
+                                onChange={setLocalSupplierId}
+                                options={allSuppliers.map((s) => ({
+                                    value: String(s.id),
+                                    label: s.name,
+                                }))}
+                                placeholder="Select a supplier…"
+                            />
+                        </div>
+                    )}
+
                     {/* Branch selection */}
                     <div className="space-y-1.5">
                         <Label className="text-xs font-medium text-text-secondary uppercase tracking-wider">

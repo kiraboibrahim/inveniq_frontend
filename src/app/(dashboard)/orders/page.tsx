@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { toast } from "sonner";
+import { SupplierOrderModal } from "@/components/features/suppliers/supplier-order-modal";
 import {
     ClipboardList,
     Filter,
@@ -26,6 +27,7 @@ import {
     TrendingUp,
     AlertCircle,
     UserCheck,
+    Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -50,6 +52,7 @@ export default function OrdersPage() {
 
     // ── Selected Order for Drawer ─────────────────────────────────────────────
     const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
     // ── Queries ──────────────────────────────────────────────────────────────
     const { data: suppliers = [] } = useQuery({
@@ -151,9 +154,18 @@ export default function OrdersPage() {
                 title="Purchase Orders Management"
                 breadcrumbs={[{ label: "Dashboard", href: "/" }, { label: "Orders" }]}
                 action={
-                    <div className="flex items-center gap-2 text-xs text-text-secondary bg-bg-surface border border-border-subtle px-3 py-1.5 rounded-lg shadow-sm">
-                        <UserCheck className="w-3.5 h-3.5 text-accent" />
-                        Role: <span className="font-semibold capitalize text-text-primary">{role}</span>
+                    <div className="flex items-center gap-3">
+                        <Button
+                            onClick={() => setIsCreateModalOpen(true)}
+                            className="bg-accent hover:bg-accent-hover text-white text-xs font-semibold gap-1.5 h-9"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Create Order
+                        </Button>
+                        <div className="flex items-center gap-2 text-xs text-text-secondary bg-bg-surface border border-border-subtle px-3 py-1.5 rounded-lg shadow-sm">
+                            <UserCheck className="w-3.5 h-3.5 text-accent" />
+                            Role: <span className="font-semibold capitalize text-text-primary">{role}</span>
+                        </div>
                     </div>
                 }
             />
@@ -548,6 +560,12 @@ export default function OrdersPage() {
                     )}
                 </SheetContent>
             </Sheet>
+
+            {/* ── Create Purchase Order Modal ───────────────────────────────── */}
+            <SupplierOrderModal
+                open={isCreateModalOpen}
+                onOpenChange={setIsCreateModalOpen}
+            />
         </div>
     );
 }

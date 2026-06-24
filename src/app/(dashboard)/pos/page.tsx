@@ -45,6 +45,7 @@ function POSContent() {
     );
     const [paymentMethod, setPaymentMethod] = useState<"cash" | "credit">("cash");
     const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+    const [dueDate, setDueDate] = useState("");
 
     const handleCustomerChange = (val: string) => {
         setSelectedCustomerId(val);
@@ -169,6 +170,7 @@ function POSContent() {
             setCart([]);
             setSelectedCustomerId("guest");
             setPaymentMethod("cash");
+            setDueDate("");
             queryClient.invalidateQueries({ queryKey: ["products"] });
             queryClient.invalidateQueries({ queryKey: ["customers"] });
         },
@@ -186,11 +188,18 @@ function POSContent() {
             });
             return;
         }
+        if (paymentMethod === "credit" && !dueDate) {
+            toast.error("Due date is required", {
+                description: "Please select a due date for credit sales.",
+            });
+            return;
+        }
         checkoutMutation.mutate({
             branch: Number(activeBranch),
             customer: selectedCustomerId === "guest" ? null : Number(selectedCustomerId),
             total_amount: cartTotals.total,
             payment_method: paymentMethod,
+            due_date: paymentMethod === "credit" ? dueDate : null,
             items: cart.map((item) => ({
                 product: Number(item.product.id),
                 quantity: item.quantity,
@@ -444,6 +453,22 @@ function POSContent() {
                                 <p className="text-xs text-text-tertiary">Select a customer to enable credit sales.</p>
                             )}
                         </div>
+
+                        {/* Due Date picker for credit sales */}
+                        {paymentMethod === "credit" && (
+                            <div className="space-y-1.5 transition-all">
+                                <Label htmlFor="due-date" className="text-text-secondary">Due date</Label>
+                                <Input
+                                    id="due-date"
+                                    type="date"
+                                    min={new Date().toISOString().split("T")[0]}
+                                    value={dueDate}
+                                    onChange={(e) => setDueDate(e.target.value)}
+                                    required
+                                    className="bg-bg-elevated border border-border-subtle text-text-primary"
+                                />
+                            </div>
+                        )}
 
                         {/* Totals */}
                         <div className="space-y-3 bg-bg-elevated border border-border-subtle rounded-md p-4">

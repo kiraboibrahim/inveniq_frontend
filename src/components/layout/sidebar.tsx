@@ -12,6 +12,7 @@ import {
     Settings,
     ShoppingCart,
     ClipboardList,
+    Receipt,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -189,6 +190,7 @@ export function Sidebar({ isCollapsed }: { isCollapsed: boolean; onToggle: () =>
             items: [
                 { name: "Dashboard", href: "/", icon: LayoutDashboard, roles: ["admin", "manager", "staff"] },
                 { name: "POS Checkout", href: "/pos", icon: ShoppingCart, roles: ["admin", "manager", "staff"] },
+                { name: "Sales Ledger", href: "/sales", icon: Receipt, roles: ["admin", "manager", "staff"] },
                 { name: "Inventory", href: "/inventory", icon: Package, roles: ["admin", "manager", "staff"] },
                 { name: "Orders", href: "/orders", icon: ClipboardList, roles: ["admin", "manager", "staff"] },
                 {
