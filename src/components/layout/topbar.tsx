@@ -60,7 +60,7 @@ function NotificationPanel({ onClose }: { onClose: () => void }) {
     const { data: alerts = [], isLoading } = useQuery<Alert[]>({
         queryKey: ["alerts"],
         queryFn: () => alertService.getAlerts(),
-        refetchInterval: 60_000,
+        refetchInterval: 10000,
     });
 
     const resolveMutation = useMutation({
@@ -197,7 +197,7 @@ export function Topbar({ toggleSidebar }: TopbarProps) {
     const { data: alerts = [] } = useQuery<Alert[]>({
         queryKey: ["alerts"],
         queryFn: () => alertService.getAlerts(),
-        refetchInterval: 60_000,
+        refetchInterval: 10000,
     });
     const unreadCount = alerts.filter((a) => !a.resolved).length;
 

@@ -177,6 +177,7 @@ export function Sidebar({ isCollapsed }: { isCollapsed: boolean; onToggle: () =>
     const { data: alerts = [] } = useQuery({
         queryKey: ["alerts"],
         queryFn: () => alertService.getAlerts(),
+        refetchInterval: 10000,
     });
 
     const alertCount = alerts.filter((a: { resolved: boolean }) => !a.resolved).length;

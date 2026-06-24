@@ -52,6 +52,7 @@ export function AlertFeedList() {
     const { data: alerts = [], isLoading } = useQuery({
         queryKey: ["alerts", activeBranch],
         queryFn: () => alertService.getAlerts(activeBranch as string),
+        refetchInterval: 10000,
     });
 
     const resolveMutation = useMutation({

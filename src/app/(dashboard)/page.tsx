@@ -22,6 +22,7 @@ export default function Dashboard() {
   const { data: alerts = [] } = useQuery<Alert[]>({
     queryKey: ["alerts", activeBranch],
     queryFn: () => alertService.getAlerts(activeBranch as string),
+    refetchInterval: 10000,
   });
 
   const { data: salesTrend = [] } = useQuery<SalesDataPoint[]>({
