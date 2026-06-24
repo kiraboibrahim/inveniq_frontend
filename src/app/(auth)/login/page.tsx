@@ -94,6 +94,7 @@ export default function Login() {
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
+                                autoComplete="email"
                             />
                         </div>
                         <div className="space-y-2">
@@ -110,6 +111,7 @@ export default function Login() {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     className="pr-10"
+                                    autoComplete="current-password"
                                 />
                                 <button
                                     type="button"
